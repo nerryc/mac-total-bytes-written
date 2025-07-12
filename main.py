@@ -1,7 +1,6 @@
 import subprocess
 import re
 
-
 def get_ssd_data_units_written():
     """
     Retrieve the number of data units written to the SSD using smartctl.
