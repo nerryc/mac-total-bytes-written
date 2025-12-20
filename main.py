@@ -24,7 +24,7 @@ def get_ssd_data_units_written():
     # Parse the output
     output = result.stdout
     written_line = re.search(
-        r"Data Units Written:\s+(\d+,\d+,\d+) \[([\d.]+ TB)\]", output
+        r"Data Units Written:\s+([\d\s,]+)\s+\[([\d.,]+ [TGMKP]?B)\]", output
     )
     if written_line:
         written_units = written_line.group(1)
