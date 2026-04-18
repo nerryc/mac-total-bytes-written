@@ -1,45 +1,38 @@
 import subprocess
 import re
+import sys
 
-def get_ssd_data_units_written():
-    """
-    Retrieve the number of data units written to the SSD using smartctl.
 
-    Returns:
-        tuple: A tuple containing the number of data units written (str) and the equivalent in terabytes (str),
-               or None if the information could not be retrieved.
-    """
-    command = "smartctl -A /dev/disk0"  # Adjust if your SSD is at a different location.
-
+def get_ssd_data_units_written(disk="/dev/disk0"):
     try:
-        # Run the command
-        result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["smartctl", "-A", disk],
+            capture_output=True,
+            text=True,
+        )
     except FileNotFoundError:
-        print("Error: 'smartctl' command not found. Please install smartmontools.")
-        return None
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing smartctl: {e.stderr}")
+        print("Error: 'smartctl' not found. Install with: brew install smartmontools")
         return None
 
-    # Parse the output
-    output = result.stdout
-    written_line = re.search(
-        r"Data Units Written:\s+([\d\s,]+)\s+\[([\d.,]+ [TGMKP]?B)\]", output
-    )
-    if written_line:
-        written_units = written_line.group(1)
-        written_tb = written_line.group(2)
-        return written_units, written_tb
-    else:
-        print("Data Units Written information not found in the smartctl output.")
+    if result.returncode not in (0, 4):
+        print(f"Error running smartctl: {result.stderr.strip()}")
         return None
+
+    match = re.search(
+        r"Data Units Written:\s+([\d\s,]+)\s+\[([\d.,]+ [TGMKP]?B)\]",
+        result.stdout,
+    )
+    if not match:
+        print("Data Units Written not found in smartctl output.")
+        return None
+
+    return match.group(1).strip(), match.group(2)
 
 
 if __name__ == "__main__":
-    written_info = get_ssd_data_units_written()
-    if written_info is not None:
-        print(
-            f"Data Units Written: {written_info[0]} units, which is approximately {written_info[1]}"
-        )
+    disk = sys.argv[1] if len(sys.argv) > 1 else "/dev/disk0"
+    info = get_ssd_data_units_written(disk)
+    if info:
+        print(f"Data Units Written: {info[0]} units, which is approximately {info[1]}")
     else:
         print("Failed to retrieve SSD data units written.")
